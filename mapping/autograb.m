@@ -1,12 +1,18 @@
 function autograb(varargin)
 
+    % Auto-start "grab" if given coordinates.
+    % Can take 1 coordinate to move to (usually this func will be called
+    % multiple times for each coordinate in a series).
+    % Can also take logfile basename and file #, in case want to specify
+    % acquisition for experiment sub-part.
+
     % example for using the ScanImage API to set up a grab
     hSI = evalin('base','hSI');                         % get hSI from the base workspace
     assert(strcmpi(hSI.acqState,'idle'));               % make sure scanimage is in an idle state
     
     % Set defaults for auto-grab series:
     %hSI.hScan2D.logFilePath = 'C:\';                   % set the folder for logging Tiff files
-    hSI.hScan2D.logFileStem = 'autograb'                % set the base file name for the Tiff file
+    hSI.hScan2D.logFileStem = 'autograb';                % set the base file name for the Tiff file
     hSI.hScan2D.logFileCounter = 1;                     % set the current Tiff file number
     hSI.hChannels.loggingEnable = true;                 % enable logging
            
@@ -24,4 +30,5 @@ function autograb(varargin)
             hSI.hScan2D.logFileCounter = varargin{3};   % file save #
 
     hSI.startGrab();                        % start the grab
+    
 end
