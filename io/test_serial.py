@@ -31,13 +31,14 @@ else:
 #time.sleep(0.25)
 #ser.setDTR(0)
 
-print "STARTING..."
 # ser.is_open()
 flushBuffer()
 sys.stdout.flush()
 
 ser.write('S')#TRIGGER
 prev_ts = 0
+
+print "STARTING..."
 
 rawfile = open(os.path.join('/tmp', 'raw.txt'), 'w')
 
@@ -93,7 +94,7 @@ while getout==0:
 
 
     nt += 1
-    #print nt
+    print curr_bts
 
     #f = codecs.open('/tmp/raw.txt', "r")
 
@@ -129,7 +130,7 @@ while getout==0:
     #     openfile.write('%i\t%s\n' % (nt, curr_bt))
     #     nt += 1
 
-    if time.time() - strt >= (30*1.):
+    if time.time() - strt >= (110*1.):
         getout=1
 
 
