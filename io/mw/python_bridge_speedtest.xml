@@ -1,0 +1,40 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<monkeyml version="1.0">
+    <io_devices tag="IO Devices">
+        <iodevice type="serverside_conduit" tag="My Server-side Event Conduit" resource_name="server_conduit"/>
+    </io_devices>
+    <variables tag="Variables">
+        <variable tag="messageVar" scope="global" logging="when_changed" default_value="notrunning" type="string"/>
+        <variable tag="timeTMs" scope="global" logging="when_changed" default_value="0" type="integer"/>
+        <variable tag="elapsedMs" scope="global" logging="when_changed" default_value="0" type="integer"/>
+    </variables>
+    <sounds tag="Sounds"/>
+    <stimuli tag="Stimuli"/>
+    <filters tag="Filters"/>
+    <optimizers tag="Optimizers"/>
+
+    <experiment tag="New Experiment" full_name="" description="">
+        <protocol tag="New Protocol" nsamples="10" sampling_method="cycles" selection="sequential" interruptible="YES">
+            <task_system tag="New Task System" interruptible="YES">
+                <task_system_state tag="SendMessage" interruptible="YES">
+                  
+                  <action type="wait" duration="500" duration_units="ms"/>
+                  <action type="assert" condition='messageVar == "notrunning"' message="sync?" stop_on_failure="1"/>
+
+                  <action type="assignment" variable="timeTMs" value="now() / 1000.0"/>
+                  <action type="assignment" variable="messageVar" value='"ping"'/>
+
+                  <transition type="conditional" condition='messageVar == "response"' target="GotMessage"/>
+                </task_system_state>
+
+                <task_system_state tag="GotMessage" interruptible="YES">
+                  <action type="assignment" variable="elapsedMs" value="now()/1000.0 - timeTMs"/>
+                  <action type="report" message="Python roundtrip done: elapsedMs $elapsedMs"/>
+                  <action type="assignment" variable="messageVar" value='"notrunning"'/>
+
+                  <transition tag="Return to parent task system" type="yield"/>
+                </task_system_state>
+            </task_system>
+        </protocol>
+    </experiment>
+</monkeyml>

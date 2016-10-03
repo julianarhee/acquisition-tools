@@ -4,10 +4,11 @@ import pymworks
 import numpy as np
 import pandas as pd
 from bokeh.io import gridplot, output_file, show, vplot
-from bokeh.plotting import figure
+from bokeh.plotting import figure, reset_output
 from bokeh.models import TapTool, HoverTool
 from bokeh.colors import RGB
-
+import codecs
+from bokeh.models import ColumnDataSource, Range1d, LabelSet, Label
 
 class TooLongError(ValueError):
     pass
@@ -117,10 +118,12 @@ def get_pixel_clock_events(dfns, remove_orphans=True):
         print "Found %i start events in session." % len(bounds)
         print "****************************************************************"
 
-
+        P = []
         for bidx,boundary in enumerate(bounds):
             if (boundary[1]-boundary[0])<1:
-                del bounds[bidx]
+                #del bounds[bidx]
+                print 'skipping'
+                continue
 
             # print "................................................................"
             print "SECTION %i" % bidx
@@ -136,10 +139,21 @@ def get_pixel_clock_events(dfns, remove_orphans=True):
             stim_evs = df.get_events('#stimDisplayUpdate')
             devs = [e for e in stim_evs if e.value and not e.value[0]==None]
             idevs = [i for i in devs for v in i.value if 'bit_code' in v.keys()]
-            pdevs = [(v['bit_code'], i.time) for i in idevs for v in i.value if 'bit_code' in v.keys()]
+            tmp_pdevs = [(v['bit_code'], i.time) for i in idevs for v in i.value if 'bit_code' in v.keys()]
+
+            # Get rid of "repeat" events from state updates.
+            
+            #tmp_pdevs = [p for i,p in enumerate(pdevs) if i not in nons]
+            pdevs = [i for i in tmp_pdevs if i[1]<= boundary[1] and i[1]>=boundary[0]]
+            nons = np.where(np.diff([i[0] for i in pdevs])==0)[0]
+            pdevs = [p for i,p in enumerate(pdevs) if i not in nons]
+
+            print "Got %i pix code events." % len(pdevs)
+
+            P.append(pdevs)
 
             #pix_evs = df.get_events('#pixelClockCode')
-            return pdevs
+            return P
 
 
             # ann_evs = df.get_events('#announceStimulus')
@@ -163,13 +177,18 @@ def get_pixel_clock_events(dfns, remove_orphans=True):
 # --------------------------------------------------------------------
 # MW codes:
 # --------------------------------------------------------------------
-data_dir = '/home/juliana/Downloads'
-dfn = os.path.join(data_dir, 'single_condition_7750.mwk')
+# data_dir = '/home/juliana/Downloads'
+mw_data_dir = '/Users/julianarhee/Documents/MWorks/Data'
+# mw_fn = 'test_trigger.mwk'
+# mw_fn = 'test_trigger_5cyc.mwk'
+mw_fn = 'test_trigger_1cyc.mwk'
+dfn = os.path.join(mw_data_dir, mw_fn)
 dfns = [dfn]
 # df = pymworks.open(dfn)
 # pix = df.get_events('#pixelClockCode')
 
-pevs = get_pixel_clock_events(dfns)
+P = get_pixel_clock_events(dfns)
+pevs = P[0]
 
 n_codes = set([i[0] for i in pevs])
 mw_times = np.array([i[1] for i in pevs])
@@ -179,26 +198,94 @@ mw_codes = np.array([i[0] for i in pevs])
 # --------------------------------------------------------------------
 # ARDUINO codes:
 # --------------------------------------------------------------------
-fn = '/tmp/raw.txt'
-evs = get_arduino_events(fn)
+ard_data_dir = '/Users/julianarhee/Documents/MWorks/PyData'
+ard_fn = 'raw00.txt'
+ard_dfn = os.path.join(ard_data_dir, ard_fn)
+
+evs = get_arduino_events(ard_dfn)
 ard_times = np.array([i[1] for i in evs])
 ard_codes = np.array([i[0] for i in evs])
 
-# pad shorter vector to do change-by-change
-import copy
-if len(ard_codes) < len(mw_codes):
-    ard_codes_pad = pad(list(ard_codes), len(mw_codes), padding=-1)
-    ard_times_pad = pad(list(ard_times), len(mw_codes), padding=-1)
-    mw_codes_pad = copy.deepcopy(mw_codes)
-elif len(ard_times) > len(mw_codes):
-    mw_codes_pad = pad(list(mw_codes), len(ard_codes), padding=-1)
-    mw_times_pad = pad(list(mw_times), len(ard_codes), padding=-1)
-    ard_codes_pad = copy.deepcopy(ard_codes)
+
+# filter out bad ones -- codes:
+
+search_reverse = False
+if search_reverse is True:
+    mw_codes_source = mw_codes[::-1] # reverse serach to find last instance
+    ard_codes_source = ard_codes[::-1]
+    ard_times_source = ard_times[::-1]
+else:
+    mw_codes_source = mw_codes
+    ard_codes_source = ard_codes
+    ard_times_source = ard_times
+
+match_idxs = []
+found_idx = 0
+curr_idx = 0
+for mw_val in mw_codes_source:
+    ard_bank = ard_codes_source[curr_idx:]
+    found_idx = next(ard_idx for ard_idx,ard_val in enumerate(ard_bank) if ard_val==mw_val)
+    curr_idx += found_idx
+    match_idxs.append(curr_idx)
+tmp_matched_ard_codes = ard_codes_source[match_idxs]
+tmp_matched_ard_times = ard_times_source[match_idxs]
+if search_reverse is True:
+    matched_ard_codes = tmp_matched_ard_codes[::-1]
+    matched_ard_times = tmp_matched_ard_times[::-1]
+else:
+    matched_ard_codes = tmp_matched_ard_codes
+    matched_ard_times = tmp_matched_ard_times
+
+
+
+t_ard = matched_ard_times - matched_ard_times[0]
+# t_mw = mw_times[0:len(matched_ard_times)] - mw_times[0]
+t_mw = mw_times[0:len(matched_ard_times)] - mw_times[0]
+reldiffs = t_mw - t_ard
+reldiffs = reldiffs #[0:-2]
+hist, edges = np.histogram(reldiffs, bins=100)
+
+# TOOLS="pan,wheel_zoom,box_zoom,reset,hover,previewsave"
+# p1 = figure(title="Relative time interval diffs (mw-ard)",tools=TOOLS,
+#             background_fill_color="#E8DDCB")
+# p1.quad(top=hist, bottom=0, left=edges[:-1], right=edges[1:],
+#         fill_color="#036564", line_color="#033649")
+
+# output_file('histogram.html', title="histogram.py example")
+
+# show(gridplot(p1, ncols=2, plot_width=400, plot_height=400, toolbar_location=None))
+
+
+
+# filter out bad ones -- times:
+# this doesnt seem to work so well... tried w/ count reqs 1000
+
+# t_ard = ard_times - ard_times[0]
+# t_mw = mw_times - mw_times[0]
+# matched_ts = [np.where(t_ard==min(t_ard, key=lambda x: abs(float(x) - t)))[0][0] for t in t_mw]
+
+# matched_ard_times = ard_times[matched_ts]
+# ard = ard_codes[1:]
+# matched_ard_codes = ard_codes[matched_ts]
+
+
+
+# # pad shorter vector to do change-by-change
+# import copy
+# if len(ard_codes) < len(mw_codes):
+#     ard_codes_pad = pad(list(ard_codes), len(mw_codes), padding=-1)
+#     ard_times_pad = pad(list(ard_times), len(mw_codes), padding=-1)
+#     mw_codes_pad = copy.deepcopy(mw_codes)
+# elif len(ard_times) > len(mw_codes):
+#     mw_codes_pad = pad(list(mw_codes), len(ard_codes), padding=-1)
+#     mw_times_pad = pad(list(mw_times), len(ard_codes), padding=-1)
+#     ard_codes_pad = copy.deepcopy(ard_codes)
 
 
 match = []
 fails = []
-for idx,pair in enumerate(zip(mw_codes_pad, ard_codes_pad)):
+# for idx,pair in enumerate(zip(mw_codes_pad, ard_codes_pad)):
+for idx,pair in enumerate(zip(mw_codes, matched_ard_codes)):
     if pair[0]==pair[1]:
         match.append(1)
     else:
@@ -224,7 +311,7 @@ for i in range(len(n_codes)):
             got_unique = True
 
 matched_colors = [colors[i] for i in mw_codes]
-ard_matched_colors = [colors[i] for i in ard_codes]
+ard_matched_colors = [colors[i] for i in matched_ard_codes]
 
 
 # hover = HoverTool(
@@ -243,30 +330,46 @@ ard_matched_colors = [colors[i] for i in ard_codes]
 reset_output()
 TOOLS="pan,wheel_zoom,box_zoom,reset,hover,previewsave"
 s1 = figure(width=1000, plot_height=500, tools=TOOLS, title='MWorks Pixel Clock Codes') # ,tools = TOOLS
-s1.yaxis.axis_label = 'MW Codes'
+s1.yaxis.axis_label = 'ARD codes | MW Codes'
 
 #x1 = p_times #range(len(p_codes)) #p_times
 x1 = (np.array(mw_times) - mw_times[0]) / 1E3
 y1 = mw_codes
 
-x2 = (np.array(ard_times) - ard_times[0]) / 1E3
-y2 = ard_codes
+x2 = (np.array(matched_ard_times) - matched_ard_times[0]) / 1E3
+y2 = matched_ard_codes
 
 s1.circle(x1,np.ones(len(x1))+0.2,color=matched_colors,size=10)
 s1.circle(x1,match,color='red',size=5)
 s1.circle(x2,np.ones(len(x2))+0.1,color=ard_matched_colors,size=10)
 
+# s2 = figure(width=1000, plot_height=500, title=None) #,tools = TOOLS
+# s2.circle(x2,np.ones(len(x2))+0.2,color=ard_matched_colors,size=10)
+# #s2.circle(x1,match,color='red',size=5)
+# s2.xaxis.axis_label = 'Time since 1st event (ms)'
+# s2.yaxis.axis_label = 'Arduino Codes'
+
+# p = gridplot([[s1], [s2]])
+# output_file("pc_codes_match.html")
+# show(p)
 
 
-s2 = figure(width=1000, plot_height=500, title=None) #,tools = TOOLS
-s2.circle(x2,np.ones(len(x2))+0.2,color=ard_matched_colors,size=10)
-#s2.circle(x1,match,color='red',size=5)
-s2.xaxis.axis_label = 'Time since 1st event (ms)'
-s2.yaxis.axis_label = 'Arduino Codes'
+hist, edges = np.histogram(reldiffs/1E3, bins=100)
+p1 = figure(title="Relative time interval diffs (mw-ard)",tools=TOOLS,
+            background_fill_color="#E8DDCB")
+p1.quad(top=hist, bottom=0, left=edges[:-1], right=edges[1:],
+        fill_color="#036564", line_color="#033649")
+median_report = "Median interval: %.2f ms" % np.median(reldiffs/1E3)
+mytext = Label(x=0, y=1000, text=median_report)
+#output_file('histogram.html', title="histogram.py example")
+p1.add_layout(mytext)
 
-p = gridplot([[s1], [s2]])
-output_file("pc_codes_match.html")
-show(p)
+output_file("codes_1ms_poll_debounce5_1cyc.html")
+show(gridplot(s1,p1, ncols=2, plot_width=400, plot_height=400))
+
+#p = gridplot([[s1], [s2]])
+#output_file("pc_codes_match.html")
+# show(p)
 
 
 

@@ -15,13 +15,13 @@ byte tmp_port;
 byte buf[4];
 
 byte tick;
-byte tmp_ports;
+byte tmp_reading;
 int reqs = 1;
 byte serialByte;
 
 int counts = 0;
-int req = 7000; // 8000, this works to get rid of all tiny events
-//int wait = 9000; // starting at 6ms, rid of shorties; 8ms better (10ms too much)
+int req = 1000; // 8000, this works to get rid of all tiny events
+int wait = 6000; // starting at 6ms, rid of shorties; 8ms better (10ms too much)
 
 
 
@@ -77,17 +77,18 @@ void loop()
           
           if (current_state != prev_state){
             
-            
+            unsigned long strt = micros();
             int counts = 0;
-            tmp_port = port;
-            while (counts <= req) {
-              port = PINB;
+            tmp_reading = current_state;
+            //while (counts <= req) {
+            while ((micros() - strt) < wait) {
+              current_state = PINB;
               //port = port & B00001111;
-              if (tmp_port == port){
+              if (tmp_reading == current_state){
                 counts += 1;
               }
               else{
-                tmp_port = port;
+                tmp_reading = current_state;
               }
             }
             
