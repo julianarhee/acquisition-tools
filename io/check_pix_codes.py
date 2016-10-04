@@ -8,7 +8,7 @@ from bokeh.plotting import figure, reset_output
 from bokeh.models import TapTool, HoverTool
 from bokeh.colors import RGB
 import codecs
-from bokeh.models import ColumnDataSource, Range1d, LabelSet, Label
+from bokeh.models import ColumnDataSource, Range1d, Label
 
 class TooLongError(ValueError):
     pass
@@ -61,27 +61,31 @@ def get_arduino_events(fn):
 
         pin = packet.split('*', 1)[0]
         tstring = packet.split('*', 1)[1]
-        pin_id = int(pin)
-        #pin_id = sum(ord(c) << (i * 8) for i, c in enumerate(tstring[::-1]))
-        tstamp = int(tstring) #sum(ord(c) << (i * 8) for i, c in enumerate(tstring[::-1]))
-        evs.append([pin_id, tstamp])
-
+        try:
+            pin_id = int(pin)
+            #pin_id = sum(ord(c) << (i * 8) for i, c in enumerate(tstring[::-1]))
+            tstamp = int(tstring) #sum(ord(c) << (i * 8) for i, c in enumerate(tstring[::-1]))
+            evs.append([pin_id, tstamp])
+        except ValueError as e:
+            print pidx
+            print pin_id
+            print tstring
     return evs
 
 
 def get_pixel_clock_events(dfns, remove_orphans=True):
-    """
-    Parse session .mwk files.
-    Key is session name values are lists of dicts for each trial in session.
-    Looks for all response and display events that occur within session.
+    # """
+    # Parse session .mwk files.
+    # Key is session name values are lists of dicts for each trial in session.
+    # Looks for all response and display events that occur within session.
 
-    dfns : list of strings
-        contains paths to each .mwk file to be parsed
+    # dfns : list of strings
+    #     contains paths to each .mwk file to be parsed
     
-    remove_orphans : boolean
-        for each response event, best matching display update event
-        set this to 'True' to remove display events with unknown outcome events
-    """
+    # remove_orphans : boolean
+    #     for each response event, best matching display update event
+    #     set this to 'True' to remove display events with unknown outcome events
+    # """
 
     #trialdata = {}                                                              # initiate output dict
     
@@ -111,7 +115,7 @@ def get_pixel_clock_events(dfns, remove_orphans=True):
                 print stop_ev
             bounds.append([modes[r]['time'], stop_ev['time']])
 
-        bounds[:] = [x for x in bounds if not x[1]-x[0]<1]
+        bounds[:] = [x for x in bounds if x[1]-x[0]>1]
         # print "................................................................"
         print "****************************************************************"
         print "Parsing file\n%s... " % dfn
@@ -120,10 +124,6 @@ def get_pixel_clock_events(dfns, remove_orphans=True):
 
         P = []
         for bidx,boundary in enumerate(bounds):
-            if (boundary[1]-boundary[0])<1:
-                #del bounds[bidx]
-                print 'skipping'
-                continue
 
             # print "................................................................"
             print "SECTION %i" % bidx
@@ -177,29 +177,39 @@ def get_pixel_clock_events(dfns, remove_orphans=True):
 # --------------------------------------------------------------------
 # MW codes:
 # --------------------------------------------------------------------
+fn_base = 'test_5cycle_poll1ms_2'
 # data_dir = '/home/juliana/Downloads'
 mw_data_dir = '/Users/julianarhee/Documents/MWorks/Data'
 # mw_fn = 'test_trigger.mwk'
 # mw_fn = 'test_trigger_5cyc.mwk'
-mw_fn = 'test_trigger_1cyc.mwk'
+#mw_fn = 'test_1cycle.mwk'
+# mw_fn = 'test_2cycle.mwk'
+# mw_fn = 'test_10cycle.mwk'
+mw_fn = fn_base+'.mwk'
 dfn = os.path.join(mw_data_dir, mw_fn)
 dfns = [dfn]
 # df = pymworks.open(dfn)
 # pix = df.get_events('#pixelClockCode')
 
 P = get_pixel_clock_events(dfns)
-pevs = P[0]
+pevs = [p for p in P if len(p)][0]
+#pevs = P[0]
 
 n_codes = set([i[0] for i in pevs])
+if len(n_codes)<16:
+    print "Check pixel clock -- missing bit values..."
 mw_times = np.array([i[1] for i in pevs])
 mw_codes = np.array([i[0] for i in pevs])
 
+# mw_codes = mw_codes[1:]
+# mw_times = mw_times[1:]
 
 # --------------------------------------------------------------------
 # ARDUINO codes:
 # --------------------------------------------------------------------
 ard_data_dir = '/Users/julianarhee/Documents/MWorks/PyData'
-ard_fn = 'raw00.txt'
+# ard_fn = 'raw00.txt'
+ard_fn = fn_base+'.txt'
 ard_dfn = os.path.join(ard_data_dir, ard_fn)
 
 evs = get_arduino_events(ard_dfn)
@@ -355,17 +365,29 @@ s1.circle(x2,np.ones(len(x2))+0.1,color=ard_matched_colors,size=10)
 
 
 hist, edges = np.histogram(reldiffs/1E3, bins=100)
-p1 = figure(title="Relative time interval diffs (mw-ard)",tools=TOOLS,
+p1_title = "Relative time interval diffs (MW - ARD), median %.2f ms" % np.median(reldiffs/1E3)
+p1 = figure(title=p1_title,tools=TOOLS,
             background_fill_color="#E8DDCB")
 p1.quad(top=hist, bottom=0, left=edges[:-1], right=edges[1:],
         fill_color="#036564", line_color="#033649")
-median_report = "Median interval: %.2f ms" % np.median(reldiffs/1E3)
-mytext = Label(x=0, y=1000, text=median_report)
-#output_file('histogram.html', title="histogram.py example")
-p1.add_layout(mytext)
+#median_report = "Median interval: %.2f ms" % np.median(reldiffs/1E3)
+#mytext = Label(x=0, y=1000, text=median_report)
+#p1.add_layout(mytext)
 
-output_file("codes_1ms_poll_debounce5_1cyc.html")
-show(gridplot(s1,p1, ncols=2, plot_width=400, plot_height=400))
+ard_match_diffs = np.diff(match_idxs)
+ard_hist, ard_edges = np.histogram(ard_match_diffs, bins=100)
+p2_title = "ARD match indices, median %.2f ms" % np.median(ard_match_diffs)
+p2 = figure(title=p2_title,tools=TOOLS,
+            background_fill_color="#E8DDCB")
+p2.quad(top=ard_hist, bottom=0, left=ard_edges[:-1], right=ard_edges[1:],
+        fill_color="#036564", line_color="#033649")
+
+fig_name = fn_base+'.html'
+output_file('../tests/'+fig_name)
+
+show(gridplot([[s1], [p1], [p2]]))
+
+#show(gridplot(s1, p1, ncols=2, plot_width=400, plot_height=400))
 
 #p = gridplot([[s1], [s2]])
 #output_file("pc_codes_match.html")

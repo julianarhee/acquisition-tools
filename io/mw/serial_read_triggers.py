@@ -148,12 +148,24 @@ print "Displaying: ", reading
 fidx = 0
 
 #rawfile = open(os.path.join('/tmp', 'raw.txt'), 'w')
-rawfile = open(os.path.join('/Users/julianarhee/Documents/MWorks/PyData', 'raw%02d.txt' % fidx), 'w')
+pyserial_dir = '/Users/julianarhee/Documents/MWorks/PyData'
+if not os.path.exists(pyserial_dir):
+    os.makedirs(pyserial_dir)
 
-print "Opened file for write..."
+#rawfile = open(os.path.join(pyserial_dir, 'raw%02d.txt' % fidx), 'w')
+fname = sys.argv[1]
+rawfile = open(os.path.join(pyserial_dir, fname+'.txt'), 'w')
+
+
+print "Opened file %s.txt for write..." % fname
 
 
 print "STARTING"
+ser.write('S')#TRIGGER
+print "GOT CALL FROM MW"
+print "Queued: ", queued
+
+
 
 nt = 0
 strt = time.time()
@@ -162,13 +174,13 @@ while queued == 0:
         print "Waiting for MW. Time elapsed: %5.3f s" % (time.time()-strt)
     nt += 1
 
-ser.write('S')#TRIGGER
-print "GOT CALL FROM MW"
-print "Queued: ", queued
+# ser.write('S')#TRIGGER
+# print "GOT CALL FROM MW"
+# print "Queued: ", queued
 
 
 #N = 0
-time.sleep(0.005)
+#time.sleep(0.005)
 # getout=0
 # prev_ts = 0
 
@@ -183,11 +195,11 @@ time.sleep(0.005)
 while not (1 in stopflag):
     #if reading==1:
 
-    curr_bts = ser.read()
+    curr_bts = ser.read(2000)
     rawfile.write(curr_bts)
 
     #nt += 1
-    10001000print curr_bts
+    print curr_bts
 
     # if time.time() - strt >= (110*1.):
     #     getout=1
@@ -203,11 +215,19 @@ while not (1 in stopflag):
     #     else:
     #         pass
 
+ser.write('F') # stop reading / sending to serial port
+bytes_left = ser.inWaiting()
+#while True: # Get any remaining stuff
+    #bytes_left = ser.bytesAvailable
+curr_bts = ser.read(bytes_left)
+rawfile.write(curr_bts)
+print "Got remaining bytes..."
+print curr_bts
 
 rawfile.close()
 print "closed file"
 
-ser.write('F')
+#ser.write('F')
 flushBuffer()
 print "CLOSED SERIAL PORT"
 
