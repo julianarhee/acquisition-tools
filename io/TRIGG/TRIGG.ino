@@ -22,7 +22,7 @@ byte serialByte;
 int counts = 0;
 int req = 1000; // 8000, this works to get rid of all tiny events
 //int wait = 4000; // starting at 6ms, rid of shorties; 8ms better (10ms too much)
-int wait = 1000; // starting at 6ms, rid of shorties; 8ms better (10ms too much)
+int wait = 3000; // starting at 6ms, rid of shorties; 8ms better (10ms too much)
 
 
 
@@ -30,7 +30,7 @@ int counter = 0;       // how many times we have seen new value
 byte reading;           // the current value read from the input pin
 byte current_state = LOW;    // the debounced input value
 
-int debounce_count = 10;
+int debounce_count = 5; //10;
 
 void setup()
 {
@@ -112,23 +112,21 @@ void loop()
             val3 = digitalRead(bit3);
             val4 = digitalRead(bit4);
             */
-
-            /*
-            unsigned long write_num = 4294967290;
-            buf[3] = (byte) (write_num & 0xFF);
-            buf[2] = (byte) ((write_num >> 8) & 0xFF);
-            buf[1] = (byte) ((write_num >> 16) & 0xFF);
-            buf[0] = (byte) ((write_num >> 24) & 0xFF);
-            */
             
+            /*
+            buf[3] = (byte) (current_state & 0xFF);
+            buf[2] = (byte) ((current_state >> 8) & 0xFF);
+            buf[1] = (byte) ((current_state >> 16) & 0xFF);
+            buf[0] = (byte) ((current_state >> 24) & 0xFF);
+            */
+    
             Serial.print("_");
             //Serial.print(code, DEC);
             //Serial.print(val1, BIN);
             //Serial.print(val2, BIN);
             //Serial.print(val3, BIN);
             //Serial.print(val4, BIN);
-            //Serial.print(current_state);
-            Serial.print(current_state);
+            Serial.print(current_state, DEC);
             //Serial.write(buf, 4);
             Serial.print("*");
             Serial.print(curr_time, DEC);

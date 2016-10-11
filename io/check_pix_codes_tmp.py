@@ -53,14 +53,17 @@ def get_arduino_events(fn):
     packets = [p for p in tmp_packets if not p=='']
     evs = []
     for pidx,packet in enumerate(packets):
-        print pidx
+        #print pidx
         if pidx==0:
             packet = packet[1:]
         elif pidx==len(packets)-1:
             packet = packet[:-1]
-
+        #try:
         pin = packet.split('*', 1)[0]
         tstring = packet.split('*', 1)[1]
+        #except IndexError as e:
+        #    print pidx
+        #    print packet
         try:
             pin_id = int(pin)
             #pin_id = sum(ord(c) << (i * 8) for i, c in enumerate(tstring[::-1]))
@@ -88,7 +91,8 @@ def get_pixel_clock_events(dfns, remove_orphans=True):
     # """
 
     #trialdata = {}                                                              # initiate output dict
-    
+    pix_evs = dict()
+
     for dfn in dfns:
         df = None
         df = pymworks.open(dfn)                                                 # open the datafile
@@ -152,8 +156,10 @@ def get_pixel_clock_events(dfns, remove_orphans=True):
 
             P.append(pdevs)
 
+        pix_evs[dfn] = P
             #pix_evs = df.get_events('#pixelClockCode')
-            return P
+    
+    return pix_evs
 
 
             # ann_evs = df.get_events('#announceStimulus')
@@ -177,7 +183,10 @@ def get_pixel_clock_events(dfns, remove_orphans=True):
 # --------------------------------------------------------------------
 # MW codes:
 # --------------------------------------------------------------------
-fn_base = 'test_5cycle_poll1ms_2'
+# fn_base = 'test_5cycle_poll1ms_2'
+# fn_base = 'test_10cycle_poll1ms'
+# fn_base = 'test_30cycle_poll1ms'
+fn_base = 'test_responses'
 # data_dir = '/home/juliana/Downloads'
 mw_data_dir = '/Users/julianarhee/Documents/MWorks/Data'
 # mw_fn = 'test_trigger.mwk'
@@ -185,8 +194,6 @@ mw_data_dir = '/Users/julianarhee/Documents/MWorks/Data'
 #mw_fn = 'test_1cycle.mwk'
 # mw_fn = 'test_2cycle.mwk'
 # mw_fn = 'test_10cycle.mwk'
-#fn_base = 'test_images_flash'
-fn_base = 'TEST'
 mw_fn = fn_base+'.mwk'
 dfn = os.path.join(mw_data_dir, mw_fn)
 dfns = [dfn]
@@ -194,7 +201,9 @@ dfns = [dfn]
 # pix = df.get_events('#pixelClockCode')
 
 P = get_pixel_clock_events(dfns)
-pevs = [p for p in P if len(p)][0]
+tmp_pevs = P[dfn]
+session_lengths = [len(p) for p in tmp_pevs]
+pevs = [p for p in tmp_pevs if len(p)==max(session_lengths)][-1]
 #pevs = P[0]
 
 n_codes = set([i[0] for i in pevs])
@@ -219,46 +228,9 @@ ard_times = np.array([i[1] for i in evs])
 ard_codes = np.array([i[0] for i in evs])
 
 
-def get_int(bitcode):
-
-    a = int(bitcode[3])*(2**0)
-    b = int(bitcode[2])*(2**1)
-    c = int(bitcode[1])*(2**2)
-    d = int(bitcode[0])*(2**3)
-
-    return a+b+c+d
-
-f = codecs.open(ard_dfn, 'r')
-data = f.read()
-packets = data.split('__')
-evs = []
-for pidx,packet in enumerate(packets):
-    print pidx
-    if pidx==0:
-        packet = packet[1:]
-    elif pidx==len(packets)-1:
-        packet = packet[:-1]
-
-    pin = packet.split('*', 1)[0]
-    tstring = packet.split('*', 1)[1]
-    try:
-        pin_id = int(pin) #get_int(pin) #pin #int(pin)
-        #pin_id = sum(ord(c) << (i * 8) for i, c in enumerate(pin[::-1]))
-        tstamp = int(tstring) #sum(ord(c) << (i * 8) for i, c in enumerate(tstring[::-1]))
-        evs.append([pin_id, tstamp])
-    except ValueError as e:
-        print pidx
-        print pin_id
-        print tstring
-
-ard_times = np.array([i[1] for i in evs])
-ard_codes = np.array([i[0] for i in evs])
-
-
-
 # filter out bad ones -- codes:
 
-search_reverse = False
+search_reverse = True
 if search_reverse is True:
     mw_codes_source = mw_codes[::-1] # reverse serach to find last instance
     ard_codes_source = ard_codes[::-1]

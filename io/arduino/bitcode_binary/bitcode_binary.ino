@@ -106,12 +106,12 @@ void loop()
 
             //unsigned long strt = micros();
             
-            /*
+            
             val1 = digitalRead(bit1);
             val2 = digitalRead(bit2);
             val3 = digitalRead(bit3);
             val4 = digitalRead(bit4);
-            */
+            
 
             /*
             unsigned long write_num = 4294967290;
@@ -122,14 +122,11 @@ void loop()
             */
             
             Serial.print("_");
-            //Serial.print(code, DEC);
-            //Serial.print(val1, BIN);
-            //Serial.print(val2, BIN);
-            //Serial.print(val3, BIN);
-            //Serial.print(val4, BIN);
             //Serial.print(current_state);
-            Serial.print(current_state);
-            //Serial.write(buf, 4);
+            Serial.print(val1);
+            Serial.print(val2);
+            Serial.print(val3);
+            Serial.print(val4);
             Serial.print("*");
             Serial.print(curr_time, DEC);
             Serial.print("_");

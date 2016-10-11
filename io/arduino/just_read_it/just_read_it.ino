@@ -24,7 +24,7 @@ int req = 1000; // 8000, this works to get rid of all tiny events
 //int wait = 4000; // starting at 6ms, rid of shorties; 8ms better (10ms too much)
 int wait = 1000; // starting at 6ms, rid of shorties; 8ms better (10ms too much)
 
-
+int interval = 1000;
 
 int counter = 0;       // how many times we have seen new value
 byte reading;           // the current value read from the input pin
@@ -74,8 +74,7 @@ void loop()
             current_state = reading;
           }
       
-
-          
+          /*
           if (current_state != prev_state){
             
             unsigned long strt = micros();
@@ -92,51 +91,27 @@ void loop()
                 tmp_reading = current_state;
               }
             }
+            */
             
             
-            /*
             unsigned long strt = micros();
             
             while ((micros()-strt) <= wait){
               current_state = PINB;
               //port = port & B00001111;
             }
-            */
-            unsigned long curr_time = micros();
-
-            //unsigned long strt = micros();
             
-            /*
-            val1 = digitalRead(bit1);
-            val2 = digitalRead(bit2);
-            val3 = digitalRead(bit3);
-            val4 = digitalRead(bit4);
-            */
-
-            /*
-            unsigned long write_num = 4294967290;
-            buf[3] = (byte) (write_num & 0xFF);
-            buf[2] = (byte) ((write_num >> 8) & 0xFF);
-            buf[1] = (byte) ((write_num >> 16) & 0xFF);
-            buf[0] = (byte) ((write_num >> 24) & 0xFF);
-            */
+            
+            unsigned long curr_time = micros();
             
             Serial.print("_");
-            //Serial.print(code, DEC);
-            //Serial.print(val1, BIN);
-            //Serial.print(val2, BIN);
-            //Serial.print(val3, BIN);
-            //Serial.print(val4, BIN);
-            //Serial.print(current_state);
             Serial.print(current_state);
-            //Serial.write(buf, 4);
             Serial.print("*");
             Serial.print(curr_time, DEC);
             Serial.print("_");
             
             prev_state = current_state;
-            //Serial.print(prev_state, DEC);
-          }
+          //}
       
           
           if (Serial.available()>0){
