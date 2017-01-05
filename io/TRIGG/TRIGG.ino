@@ -50,7 +50,8 @@ void loop()
     while (Serial.available()>0){  
     serialByte=Serial.read();
 
-    if (serialByte=='S'){      
+    if (serialByte=='S'){
+      Serial.println("starting");      
         while(1){    
           //port = PINB;
           //port = port & B00001111;

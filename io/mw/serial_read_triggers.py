@@ -127,8 +127,8 @@ global queued
 global reading
 global stopflag
 
-#conduit = IPCClientConduit(resource_name)
-#conduit.initialize()
+conduit = IPCClientConduit(resource_name)
+conduit.initialize()
 
 #reading = 0
 #queued = 0
@@ -137,10 +137,10 @@ queued = 0
 stopflag = []
 
 
-# conduit.register_callback_for_name('pyresponse', send_pyresponse)
-# conduit.register_callback_for_name('displaying', check_mw_display)
-# #time.sleep(.005)
-# conduit.register_callback_for_name('stop_it', handle_state_mode)
+conduit.register_callback_for_name('pyresponse', send_pyresponse)
+conduit.register_callback_for_name('displaying', check_mw_display)
+#time.sleep(.005)
+conduit.register_callback_for_name('stop_it', handle_state_mode)
 
 #try:
 #while doing_stuff==1:
@@ -164,11 +164,11 @@ print "Opened file %s.txt for write..." % fname
 
 
 print "STARTING"
-ser.write('S')#TRIGGER
+#ser.write('S')#TRIGGER
 print "GOT CALL FROM MW"
 print "Queued: ", queued
 
-queued = 1
+#queued = 1
 
 nt = 0
 strt = time.time()
@@ -177,7 +177,7 @@ while queued == 0:
         print "Waiting for MW. Time elapsed: %5.3f s" % (time.time()-strt)
     nt += 1
 
-# ser.write('S')#TRIGGER
+ser.write('S')#TRIGGER
 # print "GOT CALL FROM MW"
 # print "Queued: ", queued
 
