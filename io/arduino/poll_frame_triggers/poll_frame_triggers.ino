@@ -1,4 +1,4 @@
-//int ledPin = 13; // LED connected to digital pin 13
+int frame = 7; // LED connected to digital pin 13
 int bit1 = 8;   // pushbutton connected to digital pin 7
 int bit2 = 9;   // pushbutton connected to digital pin 7
 int bit3 = 10;   // pushbutton connected to digital pin 7
@@ -19,18 +19,19 @@ int counts = 0;
 //int req = 1000; // 8000, this works to get rid of all tiny events
 int wait = 4000; // starting at 6ms, rid of shorties; 8ms better (10ms too much)
 
-int interval = 1000; // sample every 1ms
+int interval = 200; //1000; // sample every 1ms
 unsigned long prev_ts;
 
 int counter = 0;       // how many times we have seen new value
 byte reading;           // the current value read from the input pin
 byte current_state = LOW;    // the debounced input value
+int current_frame = 0;
 
-int debounce_count = 10;
+int debounce_count = 5;
 
 void setup()
 {
-  //pinMode(ledPin, OUTPUT);      // sets the digital pin 13 as output
+  pinMode(frame, INPUT);      // sets the digital pin 13 as output
   //pinMode(bit1, INPUT);      // sets the digital pin 7 as input
   //pinMode(bit2, INPUT);      // sets the digital pin 7 as input
   //pinMode(bit3, INPUT);      // sets the digital pin 7 as input
@@ -54,9 +55,12 @@ void loop()
               //port = port & B00001111;
               
               // DEBOUNCE?
-              reading = PINB;
+              current_state = PINB;
+              current_frame = digitalRead(frame);
               //reading &= B00001111;
+
               
+ 
               if(reading == current_state && counter > 0)
               {
                 counter--;
@@ -71,6 +75,7 @@ void loop()
                 counter = 0;
                 current_state = reading;
               }
+              
           
 
           /*
@@ -116,6 +121,9 @@ void loop()
             */
     
             Serial.print("_");
+            Serial.print(current_frame, DEC);
+            //Serial.write(buf, 4);
+            Serial.print("*");
             //Serial.print(code, DEC);
             //Serial.print(val1, BIN);
             //Serial.print(val2, BIN);

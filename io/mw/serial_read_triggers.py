@@ -217,7 +217,8 @@ while not (1 in stopflag):
 
     #     else:
     #         pass
-
+ser.write('_*_')
+time.sleep(1.0)
 ser.write('F') # stop reading / sending to serial port
 bytes_left = ser.inWaiting()
 #while True: # Get any remaining stuff

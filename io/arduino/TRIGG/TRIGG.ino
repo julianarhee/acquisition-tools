@@ -22,7 +22,7 @@ byte serialByte;
 int counts = 0;
 int req = 1000; // 8000, this works to get rid of all tiny events
 //int wait = 4000; // starting at 6ms, rid of shorties; 8ms better (10ms too much)
-int wait = 1000; // starting at 6ms, rid of shorties; 8ms better (10ms too much)
+int wait = 6000; // starting at 6ms, rid of shorties; 8ms better (10ms too much)
 
 
 
