@@ -89,7 +89,7 @@ def flushBuffer():
 # ARDUINO STUFF:
 # ---------------------------------------------------------------
 #port = "/dev/ttyACM0"
-port = "/dev/cu.usbmodem1411"
+port = "/dev/cu.usbmodem1421"
 baudrate = 115200
 
 print "# Please specify a port and a baudrate"
