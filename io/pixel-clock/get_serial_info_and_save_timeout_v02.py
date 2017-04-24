@@ -27,10 +27,13 @@ def save_serial_data(first_line,serial_file):
     #READ REST OF LINE FROM SERIAL DATA STREAM
     frame_counter = first_line
     screen_counter = ser.readline().strip()
+    pixel_binary = ser.readline().strip()
     pixel_clock = ser.readline().strip()
+    serial_time = float(ser.readline().strip())/(10**6)#convert time to secs
     time_stamp=time.time()-start_time
-    serial_file.write('%s\t %s\t %s\t %10.4f\n'%\
-    (frame_counter, screen_counter, pixel_clock, time_stamp))
+    # print(frame_counter, screen_counter, pixel_binary,pixel_clock, serial_time, time_stamp)
+    serial_file.write('%s\t %s\t %s\t %s\t %10.6f\t %10.6f\n'%\
+    (frame_counter, screen_counter, pixel_binary, pixel_clock, serial_time, time_stamp))
 
 
 parser = optparse.OptionParser()
@@ -57,7 +60,7 @@ except OSError, e:
     pass
  #open time file and set up headers
 serial_file = open (output_folder+'serial_data.txt','w')
-serial_file.write('frame_count\t screen_count\t pixel_clock_state\t computer_time\n')
+serial_file.write('frame_count\t screen_count\t pixel_clock_binary\t pixel_clock_decimal\t arduino_time\t computer_time\n')
 
 
 #set up serial connection

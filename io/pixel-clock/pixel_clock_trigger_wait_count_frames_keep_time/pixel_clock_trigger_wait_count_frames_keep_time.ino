@@ -4,9 +4,12 @@ byte current_pixel_state;
 byte prev_pixel_state;
 int current_frame_state;
 int prev_frame_state;
+unsigned long change_time;
+unsigned long start_time;
 
 int frame_counter = 0;//counter for data frames
 int screen_counter = 0;//counter for display changes
+int first_change = 0;
 int write_flag = 0;
 
 // the setup routine runs once when you press reset:
@@ -34,19 +37,36 @@ void loop() {
         
         //update frame counter if pin 7 went from LOW to HIGH
         if ((current_frame_state - prev_frame_state) == 1){
+          if (first_change == 0){
+            start_time = micros();
+            first_change ++;
+            }
+          change_time = micros()-start_time;
           frame_counter ++;
           write_flag = 1;
         }
-        //update screen_counter if pixel clock status changed
+        //update screen_counter if pixel clock status changed, only if trigger received
         if (current_pixel_state != prev_pixel_state){
-          screen_counter ++;
-          write_flag = 1;
+           if (first_change == 0){
+            start_time = micros();
+            first_change ++;
+            }
+            change_time = micros()-start_time;
+            screen_counter ++;
+            write_flag = 1;
         }
         // output to serial
         if (write_flag==1){
+       
           Serial.println(frame_counter, DEC);
           Serial.println(screen_counter, DEC);
+          //pad with leading zeros
+          if (current_pixel_state < 2) Serial.print(B0);
+          if (current_pixel_state < 4) Serial.print(B0);
+          if (current_pixel_state < 8) Serial.print(B0);
+          Serial.println(current_pixel_state, BIN);
           Serial.println(current_pixel_state, DEC);
+          Serial.println(change_time, DEC);
           write_flag = 0;
         }
         //update counters
@@ -59,6 +79,7 @@ void loop() {
         if (serialByte=='F'){
           screen_counter = 0;
           frame_counter = 0;
+          first_change=0;
           break;
         }
         }
