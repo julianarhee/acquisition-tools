@@ -1,0 +1,3 @@
+frame_number	 sync_in1	 sync_in2	 time_stamp
+1	 0	 1	 0.0159478187561
+2	 0	 0	 0.0325229167938

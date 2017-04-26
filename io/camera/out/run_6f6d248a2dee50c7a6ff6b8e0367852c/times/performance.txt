@@ -1,0 +1,2 @@
+frame_rate	 frame_period	 acq_duration	 frame_count	 expected_frame_count	 missingFrames
+   60.0000	     0.0167	     6.5670	 394	 394	 0
