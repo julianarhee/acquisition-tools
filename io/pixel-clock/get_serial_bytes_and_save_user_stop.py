@@ -89,7 +89,7 @@ serial_file.write('acquisition_trigger\t frame_trigger\t pixel_clock\t arduino_t
 
 
 #set up serial connection
-port = "/dev/ttyACM3"
+port = "/dev/ttyACM0"
 baudrate = 115200
 
 print "# Please specify a port and a baudrate"
