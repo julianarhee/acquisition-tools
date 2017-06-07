@@ -2,12 +2,14 @@
 byte serialByte;
 byte pixel_state[1];
 byte acq_trigger_state[1];
-byte registerB_state[1];
+byte registerD_state[1];
 byte timer_bytes[4];
 
 unsigned long start_time;
 unsigned long last_refresh = 0;
 unsigned long time_stamp = 0;
+unsigned long time_stamp_internal = 0;
+
 unsigned long target_interval = 1000;// 5 ms interval between writes
 unsigned long this_interval;
 unsigned long write_count = 0;
@@ -37,7 +39,7 @@ void loop() {
       //start recording pixel clock status
       while(1){
         if (write_flag == 0){
-          acq_trigger_state[0]=(PIND>>6) &0x1;//bit-shift to the right and mask
+          acq_trigger_state[0]=(PIND>>7) &0x1;//bit-shift to the right and mask
           if (acq_trigger_state[0]>0){
             start_time = micros();
             PORTD |= B00100000;//set pin 5 to high (for camera)
@@ -47,20 +49,21 @@ void loop() {
         else
         {
           if (write_count>1){
-            this_interval = target_interval-(time_stamp-(target_interval*(write_count-1)));
+            this_interval = target_interval-(time_stamp_internal-(target_interval*(write_count-1)));
           }
           else{
             this_interval=target_interval;
           }
-         //refresh variables, and keep refreshing, when there's time
-         registerB_state[0] = PIND & 0xC0;//mask to get only pin 6 and 7
-          pixel_state[0] = PINB & 0xF;//read off B register - mask to get only bits 8,9,10,and 11
-          time_stamp = micros()-start_time;
+          registerD_state[0] = PIND & 0xC0;//mask to get only pin 6 and 7
+          pixel_state[0] = PINB & 0xF;//read off B register
+          time_stamp = micros();
+          time_stamp_internal = time_stamp -start_time;
+          
           while (micros()-last_refresh<this_interval){
-
-            registerB_state[0] = PIND & 0xC0;//mask to get only pin 6 and 7
-            pixel_state[0] = PINB & 0xF;//read off B register - mask to get only bits 8,9,10,and 11
-            time_stamp = micros()-start_time;
+            registerD_state[0] = PIND & 0xC0;//mask to get only pin 6 and 7
+            pixel_state[0] = PINB &0xF;//read off B registe
+            time_stamp = micros();
+            time_stamp_internal = time_stamp-start_time;
           }
           last_refresh = micros();
             //breaking up 32-bit number into 4 bytes
@@ -70,7 +73,7 @@ void loop() {
           timer_bytes[2] = (time_stamp >> 8) & 0xFF;//2nd byte
           timer_bytes[3] = time_stamp & 0xFF;//1st byte
           //write everything to serial
-          Serial.write(registerB_state,1);
+          Serial.write(registerD_state,1);
           Serial.write(pixel_state,1);
           Serial.write(timer_bytes,4);
           write_count++;

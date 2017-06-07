@@ -12,6 +12,7 @@ import optparse
 import hashlib
 from serial import Serial
 import array
+from datetime import datetime
 
 # cv2.namedWindow('cam_window')
 # import numpy as np
@@ -24,6 +25,8 @@ win = visual.Window(fullscr=False, size=winsize, units='pix', color = (-.5,-.5,-
 # compute a hash from the current time so that we don't accidentally overwrite old data
 #run_hash = hashlib.md5(str(time.time())).hexdigest()
 
+global first_write
+first_write = 0
 def flushBuffer():
     #Flush out serial buffer
     global ser
@@ -32,11 +35,13 @@ def flushBuffer():
         tmp=ser.read()
 
 def save_serial_data(first_byte,serial_file):
+    global first_write
+    global timer_start
 
     #FIRST BYT CONTAINS INFO ABOUT ACQUISITION AND FRAME TRIGGER
-    registerB = array.array('B',first_byte)#conver to python-readble bytes
-    acq_trigger = (registerB[0]>> 6) & 0xFF
-    frame_trigger =  (registerB[0] >> 7) & 0xFF
+    registerD = array.array('B',first_byte)#conver to python-readble bytes
+    acq_trigger = (registerD[0]>> 7) & 0x1
+    frame_trigger =  (registerD[0] >> 6) & 0x1
     #READ REST OF BYTES FROM SERIAL DATA STREAM
     pixel_clock = ord(ser.read(1))
 
@@ -55,17 +60,25 @@ def save_serial_data(first_byte,serial_file):
     timer_bytes = (timer_bytes<<8) | byte_array[3] # 4th byte: shift to the left 8 bits, or operation
  #   float(ser.readline().strip())/(10**6)
 
-    time_stamp=time.time()-start_time
-  #  print(acq_trigger,frame_trigger,pixel_clock,timer_bytes,time_stamp)
-    serial_file.write('%i\t %i\t %i\t %10.6f\t %10.6f\n'%\
-    (acq_trigger, frame_trigger, pixel_clock, float(timer_bytes)/(10**6), time_stamp))
+    if first_write == 0:
+        timer_start = timer_bytes
+        first_write = 1
+    relative_timer_bytes = timer_bytes-timer_start
+
+    absolute_time_stamp = time.clock()
+    relative_time_stamp = absolute_time_stamp-start_time
+#   print(acq_trigger,frame_trigger,pixel_clock)
+    serial_file.write('%i\t %i\t %i\t %i\t %i\t %10.6f\t %10.6f\n'%\
+    (acq_trigger, frame_trigger, pixel_clock, timer_bytes, relative_timer_bytes, absolute_time_stamp, relative_time_stamp))
 
 
 parser = optparse.OptionParser()
 parser.add_option('--output-path', action="store", dest="output_path", default="/tmp/serial", help="out path directory [default: /tmp/serial]")
+parser.add_option('--basename', action="store", dest="basename", default="test", help="basename of output file [default: test")
 
 (options, args) = parser.parse_args()
 output_path = options.output_path
+basename = options.basename
 
 # Make the output paths if it doesn't already exist
 try:
@@ -76,6 +89,8 @@ except OSError, e:
     pass
 
 #output_folder='%s/run_%s/'%(output_path,run_hash)
+
+
 output_folder = output_path+'/'
 try:
     os.mkdir(output_folder)
@@ -84,12 +99,18 @@ except OSError, e:
         raise e
     pass
  #open time file and set up headers
-serial_file = open (output_folder+'serial_data.txt','w+')
-serial_file.write('acquisition_trigger\t frame_trigger\t pixel_clock\t arduino_time\t computer_time\n')
+
+dateFormat = '%Y%m%d%H%M%S%f'
+tStamp=datetime.now().strftime(dateFormat)
+serial_file_name = '%s%s_serial_data_%s.txt' %(output_folder, basename,tStamp)
+
+serial_file = open (serial_file_name,'w+')
+serial_file.write('acquisition_trigger\t frame_trigger\t pixel_clock\t abosolute_arduino_time\t relative_arduino_time\t \
+    absolute_computer_time\t relative_computer_time\n')
 
 
 #set up serial connection
-port = "/dev/ttyACM0"
+port = "/dev/ttyACM1"
 baudrate = 115200
 
 print "# Please specify a port and a baudrate"
@@ -113,7 +134,7 @@ print('Waiting for first acquisition trigger from NIDAQ...')
 while 1:
     first_byte = ser.read(1)
     if first_byte is not '':#when we can read from serial, frame acquisition has started
-        start_time=time.time()
+        start_time=time.clock()
         #save first set of data
         save_serial_data(first_byte,serial_file)
         break
@@ -142,6 +163,7 @@ print('Stopped reading data...')
 print('Saving data in serial buffer...')
 while 1:
     first_byte = ser.read(1)
+
     if first_byte is not '':#
         print('Saving...')
         save_serial_data(first_byte,serial_file)
