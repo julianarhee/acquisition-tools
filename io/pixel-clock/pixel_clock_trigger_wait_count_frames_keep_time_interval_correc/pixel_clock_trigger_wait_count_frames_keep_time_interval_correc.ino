@@ -10,7 +10,7 @@ unsigned long last_refresh = 0;
 unsigned long time_stamp = 0;
 unsigned long time_stamp_internal = 0;
 
-unsigned long target_interval = 1000;// 5 ms interval between writes
+unsigned long target_interval = 1000;// 1 ms interval between writes
 unsigned long this_interval;
 unsigned long write_count = 0;
 
@@ -22,7 +22,7 @@ void setup() {
   // port B maps to Arduino pins 8-13
   DDRB = DDRB | B00000000;// setting pins 8 to 13 as inputs
   // port D maps to Arduino pins 0-7
-  DDRD = DDRD | B00100000; // setting pins 0 to 4, 6, and 7 as inputs
+  DDRD = DDRD | B00110000; // setting pins 0 to 4, 6, and 7 as inputs
                             //setting pin 5 as output to camera
 	                  // NOTE: make sure to leave last 2 bits to 0
                           // these are piins 0 & 1, which are RX & TX. 
@@ -42,7 +42,7 @@ void loop() {
           acq_trigger_state[0]=(PIND>>7) &0x1;//bit-shift to the right and mask
           if (acq_trigger_state[0]>0){
             start_time = micros();
-            PORTD |= B00100000;//set pin 5 to high (for camera)
+            PORTD |= B00110000;//set pin 5 to high (for camera)
             write_flag = 1; //start streaming data from first time you get acquisition trigger
           }
         }

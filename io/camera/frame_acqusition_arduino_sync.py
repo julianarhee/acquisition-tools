@@ -12,13 +12,13 @@ import errno
 import os
 import optparse
 import hashlib
+from datetime import datetime
 
-# # compute a hash from the current time so that we don't accidentally overwrite old data
-# run_hash = hashlib.md5(str(time.time())).hexdigest()
 
 
 parser = optparse.OptionParser()
 parser.add_option('--output-path', action="store", dest="output_path", default="/tmp/frames", help="out path directory [default: /tmp/frames]")
+parser.add_option('--basename', action="store", dest="basename", default="test", help="basename of output file [default: test")
 parser.add_option('--output-format', action="store", dest="output_format", type="choice", choices=['png', 'npz'], default='png', help="out file format, png or npz [default: png]")
 parser.add_option('--use-pvapi', action="store_true", dest="use_pvapi", default=True, help="use the pvapi")
 parser.add_option('--use-opencv', action="store_false", dest="use_pvapi", help="use some other camera")
@@ -32,6 +32,7 @@ save_images = True
 
 output_path = options.output_path
 output_format = options.output_format
+basename = options.basename
 save_in_separate_process = options.save_in_separate_process
 frame_rate = options.frame_rate
 frame_period = float(1/frame_rate)
@@ -53,8 +54,10 @@ except OSError, e:
         raise e
     pass
 
-#output_folder='%s/run_%s/'%(output_path,run_hash)
-output_folder = output_path
+dateFormat = '%Y%m%d%H%M%S%f'
+tStamp=datetime.now().strftime(dateFormat)
+output_folder = '%s/%s_%s' %(output_path, basename,tStamp)
+
 try:
     os.mkdir(output_folder)
 except OSError, e:
