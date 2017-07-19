@@ -1,0 +1,1 @@
+frame_number	 sync_in1	 sync_in2	 time_stamp

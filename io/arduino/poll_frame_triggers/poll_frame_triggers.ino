@@ -55,7 +55,7 @@ void loop()
               //port = port & B00001111;
               
               // DEBOUNCE?
-              current_state = PINB;
+              current_state = PINB & 0xF;
               current_frame = digitalRead(frame);
               //reading &= B00001111;
 
@@ -129,7 +129,8 @@ void loop()
             //Serial.print(val2, BIN);
             //Serial.print(val3, BIN);
             //Serial.print(val4, BIN);
-            Serial.print(current_state, DEC);
+            //Serial.print(current_state, DEC);
+            Serial.println(current_state); //, DEC);
             //Serial.write(buf, 4);
             Serial.print("*");
             Serial.print(curr_time, DEC);
