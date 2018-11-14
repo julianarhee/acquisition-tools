@@ -90,6 +90,7 @@ def flushBuffer():
 # ---------------------------------------------------------------
 #port = "/dev/ttyACM0"
 port = "/dev/cu.usbmodem1421"
+#port = "/dev/tty.Bluetooth-Incoming-Port"
 baudrate = 115200
 
 print "# Please specify a port and a baudrate"

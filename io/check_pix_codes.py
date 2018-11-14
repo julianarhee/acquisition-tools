@@ -37,20 +37,45 @@ def pad(seq, target_length, padding=None):
     return seq
 
 
-def get_arduino_events(fn):
-    f = codecs.open(fn, 'r')
-    data = f.read()
-    tmp_packets = data.split('__')
-    bad_splits = [i for i,p in enumerate(tmp_packets) if len(p)<6]
-    if bad_splits:
-        fix = np.where(np.diff(bad_splits)==1)[0]
-        remove_indices = []
-        for f in fix: # first, concatenate n and n+1 strings
-            tmp_packets[bad_splits[f]] += tmp_packets[bad_splits[f+1]]
-            remove_indices.append(bad_splits[f+1])
-        tmp_packets = [i for j,i in enumerate(tmp_packets) if j not in remove_indices]
+# def get_arduino_events(fn):
+#     f = codecs.open(fn, 'r')
+#     data = f.read()
+#     tmp_packets = data.split('__')
+#     bad_splits = [i for i,p in enumerate(tmp_packets) if len(p)<6]
+#     if bad_splits:
+#         fix = np.where(np.diff(bad_splits)==1)[0]
+#         remove_indices = []
+#         for f in fix: # first, concatenate n and n+1 strings
+#             tmp_packets[bad_splits[f]] += tmp_packets[bad_splits[f+1]]
+#             remove_indices.append(bad_splits[f+1])
+#         tmp_packets = [i for j,i in enumerate(tmp_packets) if j not in remove_indices]
 
-    packets = [p for p in tmp_packets if not p=='']
+#     packets = [p for p in tmp_packets if not p=='']
+#     evs = []
+#     for pidx,packet in enumerate(packets):
+#         print pidx
+#         if pidx==0:
+#             packet = packet[1:]
+#         elif pidx==len(packets)-1:
+#             packet = packet[:-1]
+
+#         pin = packet.split('*', 1)[0]
+#         tstring = packet.split('*', 1)[1]
+#         try:
+#             pin_id = int(pin)
+#             #pin_id = sum(ord(c) << (i * 8) for i, c in enumerate(tstring[::-1]))
+#             tstamp = int(tstring) #sum(ord(c) << (i * 8) for i, c in enumerate(tstring[::-1]))
+#             evs.append([pin_id, tstamp])
+#         except ValueError as e:
+#             print pidx
+#             print pin_id
+#             print tstring
+#     return evs
+
+def get_arduino_events(fn):
+    f = codecs.open(ard_dfn, 'r')
+    data = f.read()
+    packets = data.split('__')
     evs = []
     for pidx,packet in enumerate(packets):
         print pidx
@@ -59,17 +84,16 @@ def get_arduino_events(fn):
         elif pidx==len(packets)-1:
             packet = packet[:-1]
 
-        pin = packet.split('*', 1)[0]
-        tstring = packet.split('*', 1)[1]
         try:
-            pin_id = int(pin)
-            #pin_id = sum(ord(c) << (i * 8) for i, c in enumerate(tstring[::-1]))
-            tstamp = int(tstring) #sum(ord(c) << (i * 8) for i, c in enumerate(tstring[::-1]))
-            evs.append([pin_id, tstamp])
-        except ValueError as e:
-            print pidx
-            print pin_id
-            print tstring
+            pin = packet.split('*', 1)[0]
+            tstring = packet.split('*', 1)[1]
+        except:
+            print "pidx: %i, packet: %s" % (int(pidx), packet)
+
+        pin_id = int(pin)
+        tstamp = int(tstring) #sum(ord(c) << (i * 8) for i, c in enumerate(tstring[::-1]))
+        evs.append([pin_id, tstamp])
+        
     return evs
 
 
@@ -186,7 +210,9 @@ mw_data_dir = '/Users/julianarhee/Documents/MWorks/Data'
 # mw_fn = 'test_2cycle.mwk'
 # mw_fn = 'test_10cycle.mwk'
 #fn_base = 'test_images_flash'
-fn_base = 'TEST'
+
+
+fn_base = 'TEST' # TEST2, TEST3 -- all work
 mw_fn = fn_base+'.mwk'
 dfn = os.path.join(mw_data_dir, mw_fn)
 dfns = [dfn]
@@ -228,31 +254,39 @@ def get_int(bitcode):
 
     return a+b+c+d
 
-f = codecs.open(ard_dfn, 'r')
-data = f.read()
-packets = data.split('__')
-evs = []
-for pidx,packet in enumerate(packets):
-    print pidx
-    if pidx==0:
-        packet = packet[1:]
-    elif pidx==len(packets)-1:
-        packet = packet[:-1]
+# f = codecs.open(ard_dfn, 'r')
+# data = f.read()
+# packets = data.split('__')
+# evs = []
+# for pidx,packet in enumerate(packets):
+#     print pidx
+#     if pidx==0:
+#         packet = packet[1:]
+#     elif pidx==len(packets)-1:
+#         packet = packet[:-1]
 
-    pin = packet.split('*', 1)[0]
-    tstring = packet.split('*', 1)[1]
-    try:
-        pin_id = int(pin) #get_int(pin) #pin #int(pin)
-        #pin_id = sum(ord(c) << (i * 8) for i, c in enumerate(pin[::-1]))
-        tstamp = int(tstring) #sum(ord(c) << (i * 8) for i, c in enumerate(tstring[::-1]))
-        evs.append([pin_id, tstamp])
-    except ValueError as e:
-        print pidx
-        print pin_id
-        print tstring
+#     try:
+#         pin = packet.split('*', 1)[0]
+#         tstring = packet.split('*', 1)[1]
+#     except:
+#         print "pidx: %i, packet: %s" % (int(pidx), packet)
 
-ard_times = np.array([i[1] for i in evs])
-ard_codes = np.array([i[0] for i in evs])
+#     pin_id = int(pin)
+#     tstamp = int(tstring) #sum(ord(c) << (i * 8) for i, c in enumerate(tstring[::-1]))
+#     evs.append([pin_id, tstamp])
+
+    # try:
+    #     pin_id = int(pin) #get_int(pin) #pin #int(pin)
+    #     #pin_id = sum(ord(c) << (i * 8) for i, c in enumerate(pin[::-1]))
+    #     tstamp = int(tstring) #sum(ord(c) << (i * 8) for i, c in enumerate(tstring[::-1]))
+    #     evs.append([pin_id, tstamp])
+    # except ValueError as e:
+    #     print pidx
+    #     print pin_id
+    #     print tstring
+
+# ard_times = np.array([i[1] for i in evs])
+# ard_codes = np.array([i[0] for i in evs])
 
 
 

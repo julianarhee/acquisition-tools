@@ -19,13 +19,14 @@ int counts = 0;
 //int req = 1000; // 8000, this works to get rid of all tiny events
 int wait = 4000; // starting at 6ms, rid of shorties; 8ms better (10ms too much)
 
-int interval = 200; //1000; // sample every 1ms
-unsigned long prev_ts;
+const unsigned long interval = 200; //1000; // sample every 1ms
+unsigned long current_ts;
 
 int counter = 0;       // how many times we have seen new value
 byte reading;           // the current value read from the input pin
 byte current_state = LOW;    // the debounced input value
 int current_frame = 0;
+unsigned long current_time;
 
 int debounce_count = 5;
 
@@ -49,18 +50,22 @@ void loop()
 
     if (serialByte=='S'){      
         while(1){
-          unsigned long curr_ts = micros();
-          while ((micros() - curr_ts) < interval){
+          current_ts = micros();
+          while ((micros() - current_ts) <= interval){
               //port = PINB;
               //port = port & B00001111;
               
               // DEBOUNCE?
-              current_state = PINB;
+<<<<<<< Updated upstream
+              current_state = PINB & 0xF;
               current_frame = digitalRead(frame);
+=======
+//              current_state = PINB;
+//              current_frame = digitalRead(frame);
+>>>>>>> Stashed changes
               //reading &= B00001111;
 
-              
- 
+              /*
               if(reading == current_state && counter > 0)
               {
                 counter--;
@@ -75,7 +80,8 @@ void loop()
                 counter = 0;
                 current_state = reading;
               }
-              
+              */
+                           
           
 
           /*
@@ -105,7 +111,9 @@ void loop()
             }
             */
           }
-            unsigned long curr_time = micros();            
+            current_time = micros();            
+            current_state = PINB;
+            current_frame = digitalRead(frame);
             /*
             val1 = digitalRead(bit1);
             val2 = digitalRead(bit2);
@@ -129,13 +137,14 @@ void loop()
             //Serial.print(val2, BIN);
             //Serial.print(val3, BIN);
             //Serial.print(val4, BIN);
-            Serial.print(current_state, DEC);
+            //Serial.print(current_state, DEC);
+            Serial.println(current_state); //, DEC);
             //Serial.write(buf, 4);
             Serial.print("*");
-            Serial.print(curr_time, DEC);
+            Serial.print(current_time, DEC);
             Serial.print("_");
 
-            prev_ts = curr_ts;
+            //prev_ts = curr_ts;
             
             //prev_state = current_state;
             //Serial.print(prev_state, DEC);
