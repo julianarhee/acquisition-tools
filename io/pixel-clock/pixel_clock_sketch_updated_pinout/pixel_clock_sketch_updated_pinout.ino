@@ -1,6 +1,7 @@
 byte serialByte;
 byte pixel_state[1];
-byte acq_trigger_state[1];
+byte acq_trigger_state[1]; 
+byte frame_trigger_state[1];
 byte registerD_state[1];
 byte timer_bytes[4];
 
@@ -18,15 +19,23 @@ int write_flag = 0;
 
 // the setup routine runs once when you press reset:
 void setup() { 
-  // port B maps to Arduino pins 8-13
-  DDRB = DDRB | B00000000;// setting pins 8 to 13 as inputs
+  //*UPDATED PINOUT*
+  //PIN 2 - LEAVING OPEN FOR INTERRUPT
+  //PIN 3-6 PIXEL CLOCK
+  //PIN 7 FRAME TRIGGER
+  //PIN 8 CAMERA OUTPUT
+  
+  //I ALSO REMOVED PARTS OF CODE THAT WERE MEANT TO SEND OUTPUT TO PHIDGET IN PORT 4
+  //. THIS WAS ACTUALLY NOT BEING USED
+  
   // port D maps to Arduino pins 0-7
-  DDRD = DDRD | B00110000; // setting pins 0 to 4, 6, and 7 as inputs
-                            //setting pin 5 as output to camera
+  DDRD = DDRD | B00000000; //setting pins 0-7 as inputs
                       // NOTE: make sure to leave last 2 bits to 0
                           // these are piins 0 & 1, which are RX & TX. 
                           //changing will lead to problems with serial communication  
-  PORTD = B00000000;//set pin 5 to low
+  // port B maps to Arduino pins 8-13
+  DDRB = DDRB | B00000001;// setting pin 8 as output, 9 to 13 as inputs
+  PORTB = B00000000;//set pin 8 to low//UPDATED
   Serial.begin (115200);  //start serial connection
 }
 
@@ -40,29 +49,31 @@ void loop() {
       //start recording pixel clock status
       while(1){
         if (write_flag == 0){
-          acq_trigger_state[0]=(PIND>>7) &0x1;//bit-shift to the right and mask
-          if (acq_trigger_state[0]>0){
+          frame_trigger_state[0]=(PIND>>7) &0x1;//bit-shift to the right and mask
+          if (frame_trigger_state[0]>0){
             start_time = micros();
-            PORTD = B00110000;//set pin 5 to high 
+            PORTB = B00000001;//set pin 8 to high \\updated
             write_flag = 1; //start streaming data from first time you get acquisition trigger
           }
         }
         else
         {
+          frame_trigger_state[0]=(PIND>>7) &0x1;//bit-shift to the right and mask
+          
           if (write_count>1){
             this_interval = target_interval-(time_stamp_internal-(target_interval*(write_count-1)));
           }
           else{
             this_interval=target_interval;
           }
-          registerD_state[0] = PIND & 0xC0;//mask to get only pin 6 and 7
-          pixel_state[0] = PINB & 0xF;//read off B register
+          registerD_state[0] = PIND & 0x80;//mask to get only pin 7 \\updated
+          pixel_state[0] = PIND & 0x78;//read off D register and mask \\updated
           time_stamp = micros();
           time_stamp_internal = time_stamp -start_time;
           
           while (micros()-last_refresh<this_interval){
-            registerD_state[0] = PIND & 0xC0;//mask to get only pin 6 and 7
-            pixel_state[0] = PINB &0xF;//read off B registe
+          registerD_state[0] = PIND & 0x80;//mask to get only pin 7 \\updated
+          pixel_state[0] = PIND & 0x78;//read off D register and mask \\updated
             time_stamp = micros();
             time_stamp_internal = time_stamp-start_time;
           }
@@ -85,7 +96,7 @@ void loop() {
         if (Serial.available()>0){ //Experiment finished - stop recording pixel clock
         serialByte=Serial.read();
         if (serialByte=='F'){
-          PORTD = B00110000;//set pin 5 to high
+          PORTB = B00000000;//set pin 8 to low \\updated
           write_flag = 0;
           break;
         }
