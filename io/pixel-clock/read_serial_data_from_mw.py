@@ -70,7 +70,7 @@ def save_serial_data(first_byte,serial_file):
 
     #READ REST OF BYTES FROM SERIAL DATA STREAM
     pixel_clock, backlight_sensor = byte_to_codes(ser, dtype='B')
-    #print "backlight: %i | pixelclock %i" % (backlight_sensor, pixel_clock)
+    print "backlight: %i | pixelclock %i" % (backlight_sensor, pixel_clock)
 
     timer_bytes = read_4bytes(ser, dtype='B')
    
@@ -203,6 +203,7 @@ global stopflag
 
 conduit = IPCClientConduit(resource_name)
 conduit.initialize()
+print('here')
 #reading = 0
 #queued = 0
 reading = 0
@@ -242,8 +243,8 @@ global start_time
 print('Waiting for first acquisition trigger from NIDAQ...')
 while 1:
     first_byte = ser.read(1)
-    print first_byte, first_byte=='?'
-    if first_byte not in ['', '?']: #when we can read from serial, frame acquisition has started
+   # print first_byte, first_byte=='?'
+    if first_byte is not '': #when we can read from serial, frame acquisition has started
         start_time=time.clock()
         #save first set of data
         save_serial_data(first_byte,serial_file)
