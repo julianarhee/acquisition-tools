@@ -70,7 +70,7 @@ def save_serial_data(first_byte,serial_file):
 
     #READ REST OF BYTES FROM SERIAL DATA STREAM
     pixel_clock, backlight_sensor = byte_to_codes(ser, dtype='B')
-    print "backlight: %i | pixelclock %i" % (backlight_sensor, pixel_clock)
+    print "trigger: %i | backlight: %i | pixelclock %i" % (frame_trigger, backlight_sensor, pixel_clock)
 
     timer_bytes = read_4bytes(ser, dtype='B')
    
